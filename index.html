@@ -3,202 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BRICKVISION PRO - Full Inventory Scanner</title>
+    <title>BRICKVISION - Photo Inventory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; }
-        .scanning-active { position: relative; overflow: hidden; }
         .scanning-active::after {
-            content: ""; position: absolute; top: -100%; left: 0; width: 100%; height: 20%;
-            background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.5), transparent);
+            content: ""; position: absolute; top: -100%; left: 0; width: 100%; height: 5px;
+            background: #3b82f6; box-shadow: 0 0 15px #3b82f6;
             animation: scan-move 2s linear infinite;
         }
         @keyframes scan-move { to { top: 100%; } }
-        .part-card { animation: slideIn 0.3s ease-out forwards; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-6xl mx-auto">
-        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-6">
-            <div>
-                <h1 class="text-3xl font-black italic tracking-tighter text-blue-500">BRICKVISION</h1>
-                <p class="text-xs font-mono text-slate-500 uppercase">Neural Inventory Scanner // Live Rebrickable Link</p>
-            </div>
-            <div id="ai-status" class="bg-slate-900 border border-slate-700 px-4 py-2 rounded-xl text-xs font-bold text-slate-400">
-                AI ENGINE: <span class="text-yellow-500">INITIALIZING...</span>
-            </div>
+<body class="p-4 md:p-10">
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-10 border-b border-slate-800 pb-6">
+            <h1 class="text-4xl font-black italic tracking-tighter text-blue-500">BRICKVISION</h1>
+            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Photo-to-Inventory AI // API Authenticated</p>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Scanner Viewport -->
-            <div class="lg:col-span-7 space-y-4">
-                <div id="vid-container" class="relative bg-slate-950 rounded-3xl border-2 border-slate-800 overflow-hidden shadow-2xl aspect-video">
-                    <video id="v" autoplay playsinline class="w-full h-full object-cover hidden"></video>
-                    <canvas id="c" class="w-full h-full object-contain"></canvas>
-                    <div id="boot-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-center p-6">
-                        <p class="text-slate-400 mb-6">Camera inactive. Load vision to begin.</p>
-                        <div class="flex gap-4">
-                            <button id="btn-cam" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3 rounded-2xl transition-all shadow-lg shadow-blue-900/40">START CAMERA</button>
-                            <button id="btn-up" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-8 py-3 rounded-2xl transition-all">UPLOAD IMAGE</button>
-                        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <!-- Upload Area -->
+            <div class="space-y-6">
+                <div id="container" class="relative bg-slate-900 rounded-3xl border-2 border-slate-800 overflow-hidden aspect-square flex items-center justify-center">
+                    <canvas id="c" class="max-w-full max-h-full object-contain"></canvas>
+                    <div id="drop-text" class="absolute text-slate-500 text-center p-6">
+                        <svg class="w-12 h-12 mx-auto mb-4 opacity-20" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/></svg>
+                        <p class="font-bold">Upload a clear photo of LEGO parts</p>
                     </div>
                 </div>
-                
-                <button id="btn-scan" disabled class="w-full bg-slate-800 text-slate-500 py-5 rounded-2xl font-black text-xl tracking-widest transition-all shadow-xl active:scale-95 disabled:cursor-not-allowed">
-                    RUN INVENTORY SCAN
-                </button>
-                <input type="file" id="f-in" class="hidden" accept="image/*">
+
+                <div class="flex flex-col gap-3">
+                    <input type="file" id="f-in" class="hidden" accept="image/*">
+                    <button id="btn-upload" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-5 rounded-2xl font-black text-xl shadow-xl transition-all active:scale-95">
+                        SELECT PHOTO
+                    </button>
+                    <button id="btn-scan" disabled class="w-full bg-slate-800 text-slate-500 py-4 rounded-2xl font-bold uppercase tracking-widest disabled:cursor-not-allowed">
+                        Analyze Photo
+                    </button>
+                </div>
             </div>
 
-            <!-- Inventory Results -->
-            <div class="lg:col-span-5 flex flex-col">
-                <div class="bg-slate-900/50 rounded-3xl border border-slate-800 flex flex-col h-[600px] overflow-hidden">
-                    <div class="p-6 border-b border-slate-800 bg-slate-900/80 flex justify-between items-center">
-                        <h2 class="font-bold text-lg">Detected Parts</h2>
-                        <span id="log-count" class="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full uppercase">0 items</span>
-                    </div>
-                    <div id="inv-list" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                        <div class="text-center py-20 text-slate-600 italic">No parts identified yet</div>
-                    </div>
+            <!-- List Area -->
+            <div class="bg-slate-900/50 rounded-3xl border border-slate-800 flex flex-col h-[600px]">
+                <div class="p-6 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                    <h2 class="font-bold">Part List</h2>
+                    <span id="sys-msg" class="text-[10px] font-bold text-yellow-500 uppercase tracking-widest">AI Loading...</span>
+                </div>
+                <div id="list" class="flex-1 overflow-y-auto p-4 space-y-3">
+                    <!-- Results populate here -->
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // API CONFIG (Hiding the key using simple base64 reverse logic as requested)
-        const _k = "Mjg0MDcyNDA0MjY4NGJlMTViYzEyNTA1ZTM1Njc2RTY="; 
-        const getApiKey = () => atob(_k.split('').reverse().join('')).slice(0,-1);
+        // API Configuration (Your Obfuscated Key)
+        const _k = "Mjg0MDcyNDA0MjY4NGJlMTViYzEyNTA1ZTM1Njc2RTY=";
+        const getK = () => atob(_k.split('').reverse().join('')).slice(0,-1);
 
-        let aiModel = null;
-        const v = document.getElementById('v'), c = document.getElementById('c'), ctx = c.getContext('2d');
-        const list = document.getElementById('inv-list'), scanBtn = document.getElementById('btn-scan');
+        let ai;
+        const c = document.getElementById('c'), ctx = c.getContext('2d');
+        const list = document.getElementById('list'), scanBtn = document.getElementById('btn-scan');
+        const sysMsg = document.getElementById('sys-msg');
 
-        // 1. Load the Brain
+        // Initialize AI immediately
         (async () => {
-            try {
-                aiModel = await cocoSsd.load();
-                document.getElementById('ai-status').innerHTML = 'AI ENGINE: <span class="text-green-500">ONLINE</span>';
-                if(v.srcObject) { activateScanBtn(); }
-            } catch(e) { document.getElementById('ai-status').innerHTML = 'AI ENGINE: <span class="text-red-500">OFFLINE</span>'; }
+            ai = await cocoSsd.load();
+            sysMsg.innerText = "Ready to Scan";
+            sysMsg.classList.replace('text-yellow-500', 'text-green-500');
         })();
 
-        function activateScanBtn() {
-            scanBtn.disabled = false;
-            scanBtn.classList.replace('bg-slate-800', 'bg-blue-600');
-            scanBtn.classList.replace('text-slate-500', 'text-white');
-        }
-
-        // 2. Camera Management
-        document.getElementById('btn-cam').onclick = async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}});
-            v.srcObject = stream;
-            document.getElementById('boot-overlay').classList.add('hidden');
-            v.classList.remove('hidden');
-            if(aiModel) activateScanBtn();
-            
-            v.onloadedmetadata = () => {
-                c.width = v.videoWidth; c.height = v.videoHeight;
-                requestAnimationFrame(draw);
-            };
-        };
-
-        function draw() {
-            if(!v.paused && !v.ended) {
-                ctx.drawImage(v, 0, 0, c.width, c.height);
-                requestAnimationFrame(draw);
-            }
-        }
-
-        // 3. The Identification Engine
-        scanBtn.onclick = async () => {
-            const container = document.getElementById('vid-container');
-            container.classList.add('scanning-active');
-            scanBtn.innerText = "QUERYING DATABASE...";
-            scanBtn.disabled = true;
-
-            const detections = await aiModel.detect(c);
-            list.innerHTML = '';
-            document.getElementById('log-count').innerText = `${detections.length} ITEMS`;
-
-            if(detections.length === 0) {
-                list.innerHTML = `<div class="text-center py-10 text-slate-500">No objects detected. Try better lighting.</div>`;
-            }
-
-            // Loop through each detection to build the inventory
-            for (const item of detections) {
-                const partId = mapToLegoId(item.class);
-                const partData = await fetchPartData(partId);
-                renderPart(partData, item.bbox);
-            }
-
-            container.classList.remove('scanning-active');
-            scanBtn.innerText = "RUN INVENTORY SCAN";
-            scanBtn.disabled = false;
-        };
-
-        async function fetchPartData(id) {
-            try {
-                const response = await fetch(`https://rebrickable.com/api/v3/lego/parts/${id}/?key=${getApiKey()}`);
-                if(!response.ok) throw new Error();
-                return await response.json();
-            } catch(e) {
-                return { part_num: id, name: "Unknown LEGO Part", part_img_url: "https://via.placeholder.com/100?text=LEGO" };
-            }
-        }
-
-        // Mapping generic AI objects to likely LEGO IDs
-        function mapToLegoId(label) {
-            const map = {
-                'cup': '28655',      // Minifig Mug
-                'cell phone': '3069b', // 1x2 Tile
-                'book': '3068b',     // 2x2 Tile
-                'bottle': '95228',   // Bottle
-                'default': '3001'    // 2x4 Brick (Standard fallback)
-            };
-            return map[label] || map['default'];
-        }
-
-        function renderPart(p, box) {
-            // Draw visual highlight on canvas
-            ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 6;
-            ctx.strokeRect(...box);
-
-            // Add to inventory list
-            const div = document.createElement('div');
-            div.className = "part-card bg-slate-800/80 p-4 rounded-2xl border border-slate-700 flex items-center gap-4 shadow-lg";
-            div.innerHTML = `
-                <img src="${p.part_img_url}" class="w-14 h-14 bg-white p-1 rounded-xl object-contain">
-                <div class="flex-1 overflow-hidden">
-                    <p class="text-[10px] font-bold text-blue-500 font-mono tracking-tighter uppercase">PN: ${p.part_num}</p>
-                    <p class="text-xs font-bold text-slate-100 truncate">${p.name}</p>
-                    <p class="text-[9px] text-slate-500 font-bold mt-1">ESTIMATED MARKET PRICE: $0.12</p>
-                </div>
-            `;
-            list.appendChild(div);
-        }
-
-        // Upload handler
-        document.getElementById('btn-up').onclick = () => document.getElementById('f-in').click();
+        // File Selection
+        document.getElementById('btn-upload').onclick = () => document.getElementById('f-in').click();
+        
         document.getElementById('f-in').onchange = (e) => {
             const reader = new FileReader();
             reader.onload = (f) => {
                 const img = new Image();
                 img.onload = () => {
-                    v.pause();
-                    document.getElementById('boot-overlay').classList.add('hidden');
+                    document.getElementById('drop-text').style.display = 'none';
                     c.width = img.width; c.height = img.height;
                     ctx.drawImage(img, 0, 0);
-                    if(aiModel) activateScanBtn();
+                    scanBtn.disabled = false;
+                    scanBtn.classList.replace('bg-slate-800', 'bg-blue-600');
+                    scanBtn.classList.replace('text-slate-500', 'text-white');
                 };
                 img.src = f.target.result;
             };
             reader.readAsDataURL(e.target.files[0]);
         };
+
+        // Analysis Execution
+        scanBtn.onclick = async () => {
+            document.getElementById('container').classList.add('scanning-active');
+            scanBtn.innerText = "SCANNING DATABASE...";
+            scanBtn.disabled = true;
+            list.innerHTML = '';
+
+            const detections = await ai.detect(c);
+            
+            if (detections.length === 0) {
+                list.innerHTML = '<div class="text-slate-600 text-center py-10">No parts found. Try a closer photo.</div>';
+            }
+
+            for (const item of detections) {
+                // Map AI label to LEGO ID
+                const partId = mapId(item.class);
+                const data = await fetchPart(partId);
+                
+                // Draw Box
+                ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 8;
+                ctx.strokeRect(...item.bbox);
+
+                // Add to List
+                const row = document.createElement('div');
+                row.className = "bg-slate-800 p-4 rounded-2xl flex items-center gap-4 border border-slate-700 shadow-lg";
+                row.innerHTML = `
+                    <img src="${data.part_img_url}" class="w-12 h-12 bg-white p-1 rounded-lg">
+                    <div class="overflow-hidden">
+                        <p class="text-[10px] font-bold text-blue-500 uppercase">${data.part_num}</p>
+                        <p class="text-xs font-bold text-slate-100 truncate w-40">${data.name}</p>
+                    </div>
+                `;
+                list.appendChild(row);
+            }
+
+            document.getElementById('container').classList.remove('scanning-active');
+            scanBtn.innerText = "RE-ANALYZE";
+            scanBtn.disabled = false;
+        };
+
+        async function fetchPart(id) {
+            try {
+                const r = await fetch(`https://rebrickable.com/api/v3/lego/parts/${id}/?key=${getK()}`);
+                return await r.json();
+            } catch(e) {
+                return { part_num: id, name: "LEGO Part", part_img_url: "https://via.placeholder.com/100" };
+            }
+        }
+
+        function mapId(label) {
+            const db = {'cup': '28655', 'cell phone': '3069b', 'book': '3068b', 'default': '3001'};
+            return db[label] || db['default'];
+        }
     </script>
 </body>
 </html>
