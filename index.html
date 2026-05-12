@@ -11,39 +11,37 @@
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .drop-zone { border: 2px dashed #3b82f6; transition: all 0.3s; }
         .drop-zone:hover { background-color: #eff6ff; border-color: #2563eb; }
-        #canvas-container { position: relative; display: inline-block; }
-        video { transform: scaleX(-1); } /* Mirror for natural feel */
+        video { transform: scaleX(-1); }
+        .brick-id-badge { font-size: 0.65rem; background: #e5e7eb; padding: 1px 4px; border-radius: 4px; font-family: monospace; }
     </style>
 </head>
-<body class="p-8">
+<body class="p-4 md:p-8">
     <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-        <header class="bg-blue-600 p-6 text-white text-center">
-            <h1 class="text-3xl font-bold">LEGO Part Color & Price Scanner</h1>
-            <p class="mt-2 text-blue-100 italic underline decoration-yellow-400">Scan, count, and check market values</p>
+        <header class="bg-slate-900 p-6 text-white text-center">
+            <h1 class="text-3xl font-bold tracking-tight">BRICK<span class="text-blue-500">SCAN</span> AI</h1>
+            <p class="mt-1 text-slate-400 text-sm uppercase tracking-widest">Neural Part Recognition & Valuation</p>
         </header>
 
-        <main class="p-8">
+        <main class="p-4 md:p-8">
             <!-- Camera & Upload Section -->
             <div id="upload-section" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <!-- Direct Camera Feature -->
                 <div class="bg-gray-50 p-6 rounded-xl border-2 border-gray-200 text-center">
-                    <h3 class="text-lg font-semibold mb-4">Snap a Photo</h3>
+                    <h3 class="text-lg font-semibold mb-4">Live Scanner</h3>
                     <div id="camera-container" class="bg-black rounded-lg overflow-hidden aspect-video mb-4 flex items-center justify-center">
                         <video id="video" autoplay playsinline class="w-full h-full hidden"></video>
                         <div id="camera-placeholder" class="text-gray-400">Camera inactive</div>
                     </div>
                     <div class="flex gap-2 justify-center">
-                        <button id="start-camera" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Start Camera</button>
-                        <button id="capture-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg hidden">Capture Brick</button>
+                        <button id="start-camera" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition">Open Camera</button>
+                        <button id="capture-btn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg hidden font-semibold">Analyze Pile</button>
                     </div>
                 </div>
 
-                <!-- Drop Zone -->
                 <div id="drop-zone" class="drop-zone rounded-xl p-6 flex flex-col justify-center text-center cursor-pointer">
-                    <svg class="mx-auto h-12 w-12 text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p class="text-gray-700 font-medium">Or Drag & Drop Images</p>
+                    <div class="text-blue-500 mb-4">
+                        <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                    </div>
+                    <p class="text-gray-700 font-medium">Drop photo of LEGO pile</p>
                     <input type="file" id="file-input" class="hidden" accept="image/*">
                 </div>
             </div>
@@ -51,33 +49,41 @@
             <!-- Analysis UI -->
             <div id="analysis-container" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="space-y-4">
-                    <h2 class="text-xl font-semibold text-gray-800">Visual Analysis</h2>
-                    <div id="canvas-container" class="w-full bg-gray-100 rounded-lg overflow-hidden flex justify-center">
-                        <canvas id="image-canvas" class="max-w-full h-auto"></canvas>
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-gray-800">Vision Output</h2>
+                        <span id="status-tag" class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">READY</span>
                     </div>
-                    <div class="flex gap-4">
-                        <button id="scan-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition">Run AI Analysis</button>
-                        <button id="reset-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg transition">Clear</button>
+                    <div class="relative bg-gray-100 rounded-lg overflow-hidden shadow-inner">
+                        <canvas id="image-canvas" class="w-full h-auto block"></canvas>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="scan-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transition transform active:scale-95">Run Neural Scan</button>
+                        <button id="reset-btn" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg">Reset</button>
                     </div>
                 </div>
 
                 <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-semibold text-gray-800">Detected Inventory</h2>
-                        <button id="export-btn" class="hidden bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2 px-4 rounded-lg">Export (.xlsx)</button>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Inventory</h2>
+                            <p class="text-sm text-gray-500" id="part-count">0 parts identified</p>
+                        </div>
+                        <button id="export-btn" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                            <span>Export XLSX</span>
+                        </button>
                     </div>
                     
-                    <div class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-                        <table class="w-full text-left border-collapse">
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left">
                             <thead>
-                                <tr class="bg-gray-200 text-gray-700 text-sm uppercase">
-                                    <th class="p-4">Color/Part</th>
-                                    <th class="p-4">Qty</th>
-                                    <th class="p-4">Avg. Used Price</th>
+                                <tr class="bg-gray-50 text-gray-500 text-[10px] uppercase tracking-widest border-b border-gray-200">
+                                    <th class="p-4">Part Details</th>
+                                    <th class="p-4 text-center">Qty</th>
+                                    <th class="p-4 text-right">Market (ea)</th>
                                 </tr>
                             </thead>
-                            <tbody id="results-table-body">
-                                <tr><td colspan="3" class="p-8 text-center text-gray-400 italic">No items scanned yet</td></tr>
+                            <tbody id="results-table-body" class="divide-y divide-gray-100">
+                                <tr><td colspan="3" class="p-12 text-center text-gray-400 italic">Upload an image to start recognition</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -87,6 +93,23 @@
     </div>
 
     <script>
+        // --- CONFIG & DATABASE ---
+        const LEGO_DB = {
+            '3001': { name: 'Brick 2 x 4', price: 0.12 },
+            '3003': { name: 'Brick 2 x 2', price: 0.08 },
+            '3004': { name: 'Brick 1 x 2', price: 0.05 },
+            '3005': { name: 'Brick 1 x 1', price: 0.03 },
+            '3020': { name: 'Plate 2 x 4', price: 0.10 },
+            '3023': { name: 'Plate 1 x 2', price: 0.04 },
+            '3710': { name: 'Plate 1 x 4', price: 0.07 },
+            '2420': { name: 'Plate 2 x 2 Corner', price: 0.15 },
+            '3622': { name: 'Brick 1 x 3', price: 0.06 },
+            '3039': { name: 'Slope 45 2 x 2', price: 0.09 }
+        };
+
+        const COLORS = ['Bright Red', 'Bright Blue', 'Bright Yellow', 'White', 'Black', 'Dark Stone Grey'];
+
+        // --- DOM ELEMENTS ---
         const fileInput = document.getElementById('file-input');
         const dropZone = document.getElementById('drop-zone');
         const video = document.getElementById('video');
@@ -100,7 +123,7 @@
         const exportBtn = document.getElementById('export-btn');
         let inventoryData = [];
 
-        // --- CAMERA LOGIC ---
+        // --- CAMERA ENGINE ---
         startCamBtn.onclick = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -109,25 +132,18 @@
                 document.getElementById('camera-placeholder').classList.add('hidden');
                 captureBtn.classList.remove('hidden');
                 startCamBtn.classList.add('hidden');
-            } catch (err) {
-                alert("Camera access denied or not available.");
-            }
+            } catch (err) { alert("Camera access denied."); }
         };
 
         captureBtn.onclick = () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            // Draw mirrored if using front cam, but here we just draw directly
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             stopCamera();
             showAnalysis();
         };
 
-        function stopCamera() {
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-            }
-        }
+        function stopCamera() { if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop()); }
 
         // --- IMAGE HANDLING ---
         dropZone.onclick = () => fileInput.click();
@@ -154,82 +170,112 @@
             analysisContainer.classList.remove('hidden');
         }
 
-        document.getElementById('reset-btn').onclick = () => {
-            location.reload(); // Simple reset
-        };
-
-        // --- UPDATED AI LOGIC WITH PRICE ---
-        document.getElementById('scan-btn').onclick = () => {
+        // --- RECOGNITION ENGINE (BRICKIT FORMAT) ---
+        document.getElementById('scan-btn').onclick = async () => {
             const btn = document.getElementById('scan-btn');
+            const status = document.getElementById('status-tag');
+            
             btn.disabled = true;
-            btn.innerText = "Estimating Market Value...";
+            btn.innerText = "Processing Neural Layers...";
+            status.innerText = "SCANNING";
+            status.className = "px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full animate-pulse";
 
-            setTimeout(() => {
-                analyzeImage();
-                btn.disabled = false;
-                btn.innerText = "Run AI Analysis";
-                exportBtn.classList.remove('hidden');
-            }, 1200);
+            // Simulating AI computation time
+            await new Promise(r => setTimeout(r, 1800));
+
+            runDetection();
+            
+            btn.disabled = false;
+            btn.innerText = "Run Neural Scan";
+            status.innerText = "COMPLETE";
+            status.className = "px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full";
+            exportBtn.classList.remove('hidden');
         };
 
-        function analyzeImage() {
-            // Mock Market Data (Price per unit)
-            const marketPrices = {
-                'Brick 2x4': 0.12,
-                'Plate 2x2': 0.05,
-                'Brick 1x2': 0.03,
-                'Plate 1x4': 0.07
-            };
+        function runDetection() {
+            inventoryData = [];
+            const ids = Object.keys(LEGO_DB);
+            
+            // Generate 5-8 random detections for the demo
+            const detectionCount = Math.floor(Math.random() * 4) + 5;
+            
+            for(let i = 0; i < detectionCount; i++) {
+                const id = ids[Math.floor(Math.random() * ids.length)];
+                const part = LEGO_DB[id];
+                inventoryData.push({
+                    id: id,
+                    name: part.name,
+                    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                    qty: Math.floor(Math.random() * 3) + 1,
+                    price: part.price.toFixed(2),
+                    // Random coordinates for bounding boxes
+                    box: [
+                        Math.random() * (canvas.width * 0.7),
+                        Math.random() * (canvas.height * 0.7),
+                        canvas.width * 0.15,
+                        canvas.width * 0.1
+                    ]
+                });
+            }
 
-            inventoryData = [
-                { color: 'Bright Red', part: 'Brick 2x4', qty: Math.floor(Math.random() * 5) + 1 },
-                { color: 'Bright Blue', part: 'Plate 2x2', qty: Math.floor(Math.random() * 8) + 1 },
-                { color: 'White', part: 'Brick 1x2', qty: Math.floor(Math.random() * 12) + 1 },
-                { color: 'Yellow', part: 'Plate 1x4', qty: Math.floor(Math.random() * 4) + 1 }
-            ].map(item => ({
-                ...item,
-                avgPrice: (marketPrices[item.part] || 0.05).toFixed(2)
-            }));
-
-            updateTable();
-            drawDetections();
+            renderResults();
         }
 
-        function updateTable() {
+        function renderResults() {
             resultsTable.innerHTML = '';
+            document.getElementById('part-count').innerText = `${inventoryData.length} unique parts found`;
+
             inventoryData.forEach(item => {
                 const row = `
-                    <tr class="border-t border-gray-100 hover:bg-gray-50">
+                    <tr class="hover:bg-blue-50 transition-colors">
                         <td class="p-4">
-                            <div class="flex items-center gap-2">
-                                <span class="w-3 h-3 rounded-full" style="background-color: ${item.color.split(' ')[1].toLowerCase()}"></span>
-                                <span class="font-semibold text-gray-700">${item.part}</span>
+                            <div class="flex flex-col">
+                                <span class="brick-id-badge w-fit mb-1">${item.id}</span>
+                                <span class="font-bold text-gray-800">${item.name}</span>
+                                <span class="text-xs text-gray-500">${item.color}</span>
                             </div>
-                            <span class="text-xs text-gray-400">${item.color}</span>
                         </td>
-                        <td class="p-4 text-center font-bold text-blue-600">${item.qty}</td>
-                        <td class="p-4 text-green-600 font-mono font-bold">$${item.avgPrice} <span class="text-[10px] text-gray-400">ea</span></td>
+                        <td class="p-4 text-center font-bold text-blue-600">×${item.qty}</td>
+                        <td class="p-4 text-right font-mono text-emerald-600 font-semibold">$${item.price}</td>
                     </tr>
                 `;
                 resultsTable.innerHTML += row;
+                drawBoundingBox(item);
             });
         }
 
-        function drawDetections() {
-            for(let i=0; i<8; i++) {
-                const x = Math.random() * canvas.width * 0.7;
-                const y = Math.random() * canvas.height * 0.7;
-                ctx.strokeStyle = '#10b981';
-                ctx.lineWidth = Math.max(2, canvas.width / 200);
-                ctx.strokeRect(x, y, 80, 50);
-            }
+        function drawBoundingBox(item) {
+            const [x, y, w, h] = item.box;
+            
+            // Draw Box
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = Math.max(3, canvas.width / 300);
+            ctx.strokeRect(x, y, w, h);
+            
+            // Draw Label
+            ctx.fillStyle = '#3b82f6';
+            const labelWidth = ctx.measureText(item.id).width + 20;
+            ctx.fillRect(x, y - 20, labelWidth, 20);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px monospace';
+            ctx.fillText(item.id, x + 5, y - 5);
         }
 
+        document.getElementById('reset-btn').onclick = () => location.reload();
+
         exportBtn.onclick = () => {
-            const worksheet = XLSX.utils.json_to_sheet(inventoryData);
+            const worksheet = XLSX.utils.json_to_sheet(inventoryData.map(i => ({
+                ID: i.id,
+                Name: i.name,
+                Color: i.color,
+                Qty: i.qty,
+                UnitPrice: i.price,
+                TotalPrice: (i.qty * i.price).toFixed(2)
+            })));
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Lego Inventory");
-            XLSX.writeFile(workbook, "Lego_Market_Inventory.xlsx");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
+            XLSX.writeFile(workbook, "Lego_Scan_Export.xlsx");
         };
     </script>
 </body>
