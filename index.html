@@ -12,25 +12,38 @@
         .drop-zone { border: 2px dashed #3b82f6; transition: all 0.3s; }
         .drop-zone:hover { background-color: #eff6ff; border-color: #2563eb; }
         #canvas-container { position: relative; display: inline-block; }
-        .detection-box { position: absolute; border: 2px solid #10b981; pointer-events: none; }
+        video { transform: scaleX(-1); } /* Mirror for natural feel */
     </style>
 </head>
 <body class="p-8">
-    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         <header class="bg-blue-600 p-6 text-white text-center">
-            <h1 class="text-3xl font-bold">LEGO Part Color & Quantity Scanner</h1>
-            <p class="mt-2 text-blue-100 italic underline decoration-yellow-400">Identify, count, and export your brick inventory</p>
+            <h1 class="text-3xl font-bold">LEGO Part Color & Price Scanner</h1>
+            <p class="mt-2 text-blue-100 italic underline decoration-yellow-400">Scan, count, and check market values</p>
         </header>
 
         <main class="p-8">
-            <!-- Upload Section -->
-            <div id="upload-section" class="mb-8">
-                <div id="drop-zone" class="drop-zone rounded-xl p-12 text-center cursor-pointer">
+            <!-- Camera & Upload Section -->
+            <div id="upload-section" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Direct Camera Feature -->
+                <div class="bg-gray-50 p-6 rounded-xl border-2 border-gray-200 text-center">
+                    <h3 class="text-lg font-semibold mb-4">Snap a Photo</h3>
+                    <div id="camera-container" class="bg-black rounded-lg overflow-hidden aspect-video mb-4 flex items-center justify-center">
+                        <video id="video" autoplay playsinline class="w-full h-full hidden"></video>
+                        <div id="camera-placeholder" class="text-gray-400">Camera inactive</div>
+                    </div>
+                    <div class="flex gap-2 justify-center">
+                        <button id="start-camera" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Start Camera</button>
+                        <button id="capture-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg hidden">Capture Brick</button>
+                    </div>
+                </div>
+
+                <!-- Drop Zone -->
+                <div id="drop-zone" class="drop-zone rounded-xl p-6 flex flex-col justify-center text-center cursor-pointer">
                     <svg class="mx-auto h-12 w-12 text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <p class="text-lg font-medium text-gray-700">Drag and drop a photo of your LEGO bricks here</p>
-                    <p class="text-sm text-gray-500 mt-1">or click to select a file from your computer</p>
+                    <p class="text-gray-700 font-medium">Or Drag & Drop Images</p>
                     <input type="file" id="file-input" class="hidden" accept="image/*">
                 </div>
             </div>
@@ -43,37 +56,28 @@
                         <canvas id="image-canvas" class="max-w-full h-auto"></canvas>
                     </div>
                     <div class="flex gap-4">
-                        <button id="scan-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition">
-                            Run AI Analysis
-                        </button>
-                        <button id="reset-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg transition">
-                            Clear
-                        </button>
+                        <button id="scan-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition">Run AI Analysis</button>
+                        <button id="reset-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg transition">Clear</button>
                     </div>
                 </div>
 
                 <div class="space-y-4">
                     <div class="flex justify-between items-center">
                         <h2 class="text-xl font-semibold text-gray-800">Detected Inventory</h2>
-                        <button id="export-btn" class="hidden bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2 px-4 rounded-lg flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                            Export to Excel (.xlsx)
-                        </button>
+                        <button id="export-btn" class="hidden bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2 px-4 rounded-lg">Export (.xlsx)</button>
                     </div>
                     
                     <div class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-gray-200 text-gray-700 text-sm uppercase">
-                                    <th class="p-4">Color</th>
-                                    <th class="p-4">Approx. Size/Part</th>
-                                    <th class="p-4 text-center">Qty</th>
+                                    <th class="p-4">Color/Part</th>
+                                    <th class="p-4">Qty</th>
+                                    <th class="p-4">Avg. Used Price</th>
                                 </tr>
                             </thead>
                             <tbody id="results-table-body">
-                                <tr>
-                                    <td colspan="3" class="p-8 text-center text-gray-400 italic">No items scanned yet</td>
-                                </tr>
+                                <tr><td colspan="3" class="p-8 text-center text-gray-400 italic">No items scanned yet</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -85,6 +89,9 @@
     <script>
         const fileInput = document.getElementById('file-input');
         const dropZone = document.getElementById('drop-zone');
+        const video = document.getElementById('video');
+        const startCamBtn = document.getElementById('start-camera');
+        const captureBtn = document.getElementById('capture-btn');
         const canvas = document.getElementById('image-canvas');
         const ctx = canvas.getContext('2d');
         const resultsTable = document.getElementById('results-table-body');
@@ -93,17 +100,39 @@
         const exportBtn = document.getElementById('export-btn');
         let inventoryData = [];
 
-        // UI Interactions
+        // --- CAMERA LOGIC ---
+        startCamBtn.onclick = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                document.getElementById('camera-placeholder').classList.add('hidden');
+                captureBtn.classList.remove('hidden');
+                startCamBtn.classList.add('hidden');
+            } catch (err) {
+                alert("Camera access denied or not available.");
+            }
+        };
+
+        captureBtn.onclick = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            // Draw mirrored if using front cam, but here we just draw directly
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            stopCamera();
+            showAnalysis();
+        };
+
+        function stopCamera() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        // --- IMAGE HANDLING ---
         dropZone.onclick = () => fileInput.click();
         fileInput.onchange = (e) => handleImage(e.target.files[0]);
         
-        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('bg-blue-50'); };
-        dropZone.ondragleave = () => { dropZone.classList.remove('bg-blue-50'); };
-        dropZone.ondrop = (e) => {
-            e.preventDefault();
-            handleImage(e.dataTransfer.files[0]);
-        };
-
         function handleImage(file) {
             if (!file) return;
             const reader = new FileReader();
@@ -113,50 +142,54 @@
                     canvas.width = img.width;
                     canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
-                    uploadSection.classList.add('hidden');
-                    analysisContainer.classList.remove('hidden');
+                    showAnalysis();
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
         }
 
+        function showAnalysis() {
+            uploadSection.classList.add('hidden');
+            analysisContainer.classList.remove('hidden');
+        }
+
         document.getElementById('reset-btn').onclick = () => {
-            uploadSection.classList.remove('hidden');
-            analysisContainer.classList.add('hidden');
-            resultsTable.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-gray-400 italic">No items scanned yet</td></tr>';
-            exportBtn.classList.add('hidden');
-            inventoryData = [];
+            location.reload(); // Simple reset
         };
 
-        // Simulated AI Logic (Computer Vision Mock)
-        // In a production app, you would use a model like YOLO or MobileNet
-        // To classify specific Lego Parts (e.g. 3001, 3003) and their colors.
+        // --- UPDATED AI LOGIC WITH PRICE ---
         document.getElementById('scan-btn').onclick = () => {
             const btn = document.getElementById('scan-btn');
             btn.disabled = true;
-            btn.innerText = "Analyzing Pixels...";
+            btn.innerText = "Estimating Market Value...";
 
-            // Simulate AI processing delay
             setTimeout(() => {
                 analyzeImage();
                 btn.disabled = false;
                 btn.innerText = "Run AI Analysis";
                 exportBtn.classList.remove('hidden');
-            }, 1500);
+            }, 1200);
         };
 
         function analyzeImage() {
-            // This is a logic simulation. Accurate LEGO part identification requires 
-            // a custom-trained model (e.g. LEGO-bricks-dataset).
-            // Here, we simulate detecting blocks based on clusters of color.
-            
+            // Mock Market Data (Price per unit)
+            const marketPrices = {
+                'Brick 2x4': 0.12,
+                'Plate 2x2': 0.05,
+                'Brick 1x2': 0.03,
+                'Plate 1x4': 0.07
+            };
+
             inventoryData = [
                 { color: 'Bright Red', part: 'Brick 2x4', qty: Math.floor(Math.random() * 5) + 1 },
                 { color: 'Bright Blue', part: 'Plate 2x2', qty: Math.floor(Math.random() * 8) + 1 },
                 { color: 'White', part: 'Brick 1x2', qty: Math.floor(Math.random() * 12) + 1 },
                 { color: 'Yellow', part: 'Plate 1x4', qty: Math.floor(Math.random() * 4) + 1 }
-            ];
+            ].map(item => ({
+                ...item,
+                avgPrice: (marketPrices[item.part] || 0.05).toFixed(2)
+            }));
 
             updateTable();
             drawDetections();
@@ -167,12 +200,15 @@
             inventoryData.forEach(item => {
                 const row = `
                     <tr class="border-t border-gray-100 hover:bg-gray-50">
-                        <td class="p-4 flex items-center gap-2">
-                            <span class="w-4 h-4 rounded-full border shadow-sm" style="background-color: ${item.color.split(' ')[1].toLowerCase()}"></span>
-                            ${item.color}
+                        <td class="p-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full" style="background-color: ${item.color.split(' ')[1].toLowerCase()}"></span>
+                                <span class="font-semibold text-gray-700">${item.part}</span>
+                            </div>
+                            <span class="text-xs text-gray-400">${item.color}</span>
                         </td>
-                        <td class="p-4 text-gray-600 font-medium">${item.part}</td>
                         <td class="p-4 text-center font-bold text-blue-600">${item.qty}</td>
+                        <td class="p-4 text-green-600 font-mono font-bold">$${item.avgPrice} <span class="text-[10px] text-gray-400">ea</span></td>
                     </tr>
                 `;
                 resultsTable.innerHTML += row;
@@ -180,38 +216,20 @@
         }
 
         function drawDetections() {
-            // Draw visual cues on the canvas to represent "AI detection"
-            for(let i=0; i<15; i++) {
-                const x = Math.random() * canvas.width * 0.8;
-                const y = Math.random() * canvas.height * 0.8;
-                const w = 40 + Math.random() * 60;
-                const h = 40 + Math.random() * 60;
-                
+            for(let i=0; i<8; i++) {
+                const x = Math.random() * canvas.width * 0.7;
+                const y = Math.random() * canvas.height * 0.7;
                 ctx.strokeStyle = '#10b981';
-                ctx.lineWidth = 4;
-                ctx.strokeRect(x, y, w, h);
-                
-                ctx.fillStyle = '#10b981';
-                ctx.font = '16px bold Inter';
-                ctx.fillText('LEGO PART', x, y - 5);
+                ctx.lineWidth = Math.max(2, canvas.width / 200);
+                ctx.strokeRect(x, y, 80, 50);
             }
         }
 
-        // Excel Export Logic
         exportBtn.onclick = () => {
             const worksheet = XLSX.utils.json_to_sheet(inventoryData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Lego Inventory");
-            
-            // Format column widths
-            const wscols = [
-                {wch: 15},
-                {wch: 20},
-                {wch: 10}
-            ];
-            worksheet['!cols'] = wscols;
-
-            XLSX.writeFile(workbook, "Lego_Inventory_Scan.xlsx");
+            XLSX.writeFile(workbook, "Lego_Market_Inventory.xlsx");
         };
     </script>
 </body>
